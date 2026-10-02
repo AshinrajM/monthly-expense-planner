@@ -4,8 +4,12 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Monthly",
-  description: "A premium personal monthly payment checklist application.",
+  title: "Monthly | Personal Expense & Payment Planner",
+  description: "A premium color-graded personal monthly payment checklist application.",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({ children }) {

@@ -34,10 +34,16 @@ export const parseMonthStr = (monthStr) => {
 };
 
 export const isMonthInRange = (targetMonthStr, startMonthStr, durationMonths) => {
+  if (!targetMonthStr || !startMonthStr) return true;
   const target = parseMonthStr(targetMonthStr);
   const start = parseMonthStr(startMonthStr);
   const targetAbsolute = target.year * 12 + target.month;
   const startAbsolute = start.year * 12 + start.month;
+
+  const duration = parseInt(durationMonths);
+  if (isNaN(duration) || duration <= 0 || duration >= 999) {
+    return targetAbsolute >= startAbsolute;
+  }
   
-  return targetAbsolute >= startAbsolute && targetAbsolute < (startAbsolute + durationMonths);
+  return targetAbsolute >= startAbsolute && targetAbsolute < (startAbsolute + duration);
 };

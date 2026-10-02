@@ -12,6 +12,7 @@ import DashboardHome from "@/components/DashboardHome";
 import MonthExplorer from "@/components/MonthExplorer";
 import SettingsView from "@/components/SettingsView";
 import AddPaymentModal from "@/components/AddPaymentModal";
+import AppLogo from "@/components/AppLogo";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -74,15 +75,7 @@ export default function DashboardPage() {
       <header className="hidden md:block sticky top-0 z-30 pt-4 px-6 mb-4">
         <div className="max-w-6xl mx-auto glass-card rounded-full px-6 py-3 border border-white/90 shadow-md shadow-slate-900/5 flex items-center justify-between">
           {/* Logo & Brand */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-center shadow-md shadow-slate-900/15">
-              <Sparkles size={20} className="text-indigo-400" />
-            </div>
-            <div>
-              <span className="text-sm font-black tracking-wider text-slate-900 uppercase">MONTHLY</span>
-              <span className="text-[10px] font-bold text-slate-400 block -mt-1">Personal Checklist</span>
-            </div>
-          </div>
+          <AppLogo size="md" />
 
           {/* Desktop Navigation Tabs */}
           <nav className="flex items-center gap-1.5 bg-slate-100/80 p-1.5 rounded-full border border-slate-200/50">

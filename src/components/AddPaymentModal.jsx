@@ -36,17 +36,25 @@ export default function AddPaymentModal({ onClose, onSuccess }) {
     }
   }, [amountInput, durationMonths, calculationMode, splitMonths]);
 
+  const handleModeSwitch = (mode) => {
+    setCalculationMode(mode);
+    if (mode === "fixed" && durationMonths === 1) {
+      setDurationMonths(12);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !amountInput || durationMonths < 1 || !startMonth || !dueDay || isLoading) return;
+    if (!name || !amountInput || !startMonth || !dueDay || isLoading) return;
 
     setIsLoading(true);
     try {
+      const finalDuration = calculationMode === "split" ? (parseInt(splitMonths) || 1) : (parseInt(durationMonths) || 12);
       const newPlan = {
         id: `payment-${Date.now()}`,
         name,
         totalAmount,
-        durationMonths: durationMonths,
+        durationMonths: finalDuration,
         monthlyAmount,
         splitMonths: calculationMode === "split" ? splitMonths : undefined,
         startMonth,
@@ -98,7 +106,7 @@ export default function AddPaymentModal({ onClose, onSuccess }) {
         <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-6 border border-slate-200/50">
           <button
             type="button"
-            onClick={() => setCalculationMode("split")}
+            onClick={() => handleModeSwitch("split")}
             className={`flex-1 py-2.5 text-xs font-extrabold rounded-xl transition-all duration-200 ${
               calculationMode === "split"
                 ? "bg-white text-slate-900 shadow-sm"
@@ -109,7 +117,7 @@ export default function AddPaymentModal({ onClose, onSuccess }) {
           </button>
           <button
             type="button"
-            onClick={() => setCalculationMode("fixed")}
+            onClick={() => handleModeSwitch("fixed")}
             className={`flex-1 py-2.5 text-xs font-extrabold rounded-xl transition-all duration-200 ${
               calculationMode === "fixed"
                 ? "bg-white text-slate-900 shadow-sm"

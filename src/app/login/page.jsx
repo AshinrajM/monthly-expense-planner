@@ -11,6 +11,7 @@ import {
   Sparkles,
   ShieldCheck
 } from "lucide-react";
+import AppLogo from "@/components/AppLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -52,16 +53,9 @@ export default function LoginPage() {
 
           {/* Header */}
           <div className="mb-8 text-center relative z-10">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xl shadow-indigo-950/20">
-              <LockKeyhole size={24} />
-            </div>
+            <AppLogo size="lg" className="justify-center mb-3" />
 
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200/60 mb-1.5">
-              <Sparkles size={11} className="text-indigo-500" />
-              Monthly App
-            </span>
-
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl mt-2">
               Welcome Back
             </h1>
 
