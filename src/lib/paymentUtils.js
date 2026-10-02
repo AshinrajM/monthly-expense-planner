@@ -1,36 +1,27 @@
 import { getPaymentPlans, getMonthlyStatuses, saveMonthlyStatuses, deletePaymentPlanApi, updatePaymentPlanApi } from './storage';
 import { isMonthInRange } from './dateUtils';
 
-export const getPaymentsForMonth = async (monthStr) => {
-  const plans = await getPaymentPlans();
-  const statuses = await getMonthlyStatuses();
+export const getAllData = async () => {
+  const [plans, statuses] = await Promise.all([
+    getPaymentPlans(),
+    getMonthlyStatuses(),
+  ]);
+  return { plans: plans || [], statuses: statuses || {} };
+};
+
+export const getPaymentsForMonthFromData = (plans = [], statuses = {}, monthStr) => {
   const monthStatuses = statuses[monthStr] || {};
-  let statusUpdated = false;
+  const activePayments = plans.filter(plan => isMonthInRange(monthStr, plan.startMonth, plan.durationMonths));
 
-  const activePayments = (plans || []).filter(plan => isMonthInRange(monthStr, plan.startMonth, plan.durationMonths));
+  return activePayments.map(plan => ({
+    ...plan,
+    paid: monthStatuses[plan.id]?.paid ?? false,
+  }));
+};
 
-  const result = activePayments.map(plan => {
-    let paid = false;
-    if (monthStatuses[plan.id]) {
-      paid = monthStatuses[plan.id].paid;
-    } else {
-      // Initialize if not present
-      monthStatuses[plan.id] = { paid: false };
-      statusUpdated = true;
-    }
-    
-    return {
-      ...plan,
-      paid,
-    };
-  });
-
-  if (statusUpdated) {
-    statuses[monthStr] = monthStatuses;
-    await saveMonthlyStatuses(statuses);
-  }
-
-  return result;
+export const getPaymentsForMonth = async (monthStr) => {
+  const { plans, statuses } = await getAllData();
+  return getPaymentsForMonthFromData(plans, statuses, monthStr);
 };
 
 export const togglePaymentStatus = async (monthStr, paymentId, isPaid) => {

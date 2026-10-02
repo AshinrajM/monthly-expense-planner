@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, Calendar, CheckCircle2, Sparkles, Clock, ArrowRight } from "lucide-react";
 import { getCurrentMonthString, getSurroundingMonths, formatMonthString } from "@/lib/dateUtils";
-import { getPaymentsForMonth, calculateMonthStats } from "@/lib/paymentUtils";
+import { getAllData, getPaymentsForMonthFromData, calculateMonthStats } from "@/lib/paymentUtils";
 import DashboardHome from "./DashboardHome";
 
 export default function MonthExplorer({ selectedMonth, setSelectedMonth, refreshTrigger, onStatusChange }) {
@@ -16,17 +16,13 @@ export default function MonthExplorer({ selectedMonth, setSelectedMonth, refresh
     const surrounding = getSurroundingMonths(currentRealMonth, 8, 8);
     setMonths(surrounding);
     
-    // Pre-calculate stats for all surrounding months to show in the timeline
-    Promise.all(
-      surrounding.map(async (m) => {
-        const payments = await getPaymentsForMonth(m);
-        return { month: m, stats: calculateMonthStats(payments) };
-      })
-    ).then((results) => {
+    // Fetch all data once and calculate stats for all surrounding months in memory
+    getAllData().then(({ plans, statuses }) => {
       if (!isMounted) return;
       const statsObj = {};
-      results.forEach(({ month, stats }) => {
-        statsObj[month] = stats;
+      surrounding.forEach((m) => {
+        const payments = getPaymentsForMonthFromData(plans, statuses, m);
+        statsObj[m] = calculateMonthStats(payments);
       });
       setMonthStats(statsObj);
     });

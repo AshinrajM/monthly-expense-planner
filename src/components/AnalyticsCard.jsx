@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { TrendingUp, TrendingDown, BarChart3, PieChart, ArrowUpRight, ChevronRight, Layers, Sparkles } from "lucide-react";
 import { getCurrentMonthString, getSurroundingMonths, formatMonthString } from "@/lib/dateUtils";
-import { getPaymentsForMonth, calculateMonthStats } from "@/lib/paymentUtils";
+import { getAllData, getPaymentsForMonthFromData, calculateMonthStats } from "@/lib/paymentUtils";
 import { getPaymentCategoryInfo } from "@/lib/iconUtils";
 
 export default function AnalyticsCard({ currentMonthStr }) {
@@ -16,14 +16,14 @@ export default function AnalyticsCard({ currentMonthStr }) {
     // Get 6 surrounding months for comparison (3 past, current, 2 future)
     const surrounding = getSurroundingMonths(currentMonthStr, 3, 2);
 
-    Promise.all(
-      surrounding.map(async (m) => {
-        const payments = await getPaymentsForMonth(m);
+    getAllData().then(({ plans, statuses }) => {
+      if (!isMounted) return;
+
+      const results = surrounding.map((m) => {
+        const payments = getPaymentsForMonthFromData(plans, statuses, m);
         const stats = calculateMonthStats(payments);
         return { monthStr: m, payments, stats };
-      })
-    ).then((results) => {
-      if (!isMounted) return;
+      });
 
       // Calculate chart data
       setChartData(results);
