@@ -34,50 +34,35 @@ export const logout = async () => {
   }
 };
 
-// --- PAYMENT PLANS WITH LOCALSTORAGE BACKUP & HYBRID SYNC ---
-
 export const getPaymentPlans = async () => {
-  let localPlans = [];
+  try {
+    const res = await fetch('/api/payments', { cache: 'no-store' });
+    if (res.ok) {
+      const apiPlans = await res.json();
+      if (Array.isArray(apiPlans)) {
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(apiPlans));
+          } catch (e) {}
+        }
+        return apiPlans;
+      }
+    }
+  } catch (error) {
+    console.error('API fetch error for plans, using localStorage fallback:', error);
+  }
+
+  // Offline or network error fallback
   if (typeof window !== 'undefined') {
     try {
       const saved = localStorage.getItem(PLANS_STORAGE_KEY);
-      if (saved) localPlans = JSON.parse(saved);
+      if (saved) return JSON.parse(saved);
     } catch (e) {
       console.error('Error reading localStorage plans:', e);
     }
   }
 
-  try {
-    const res = await fetch('/api/payments', { cache: 'no-store' });
-    if (res.ok) {
-      const apiPlans = await res.json();
-      
-      if (Array.isArray(apiPlans)) {
-        // Union merge local & server plans to guarantee zero data loss
-        const planMap = new Map();
-        localPlans.forEach(p => p?.id && planMap.set(p.id, p));
-        apiPlans.forEach(p => p?.id && planMap.set(p.id, p));
-        const mergedPlans = Array.from(planMap.values());
-
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(mergedPlans));
-        }
-
-        // If local had plans not yet on server, sync them to server
-        if (localPlans.length > apiPlans.length) {
-          for (const plan of localPlans) {
-            await savePaymentPlanApi(plan);
-          }
-        }
-
-        return mergedPlans;
-      }
-    }
-  } catch (error) {
-    console.error('API fetch error for plans, using localStorage:', error);
-  }
-
-  return localPlans;
+  return [];
 };
 
 const savePaymentPlanApi = async (plan) => {
@@ -162,34 +147,32 @@ export const deletePaymentPlanApi = async (paymentId) => {
   }
 };
 
-// --- MONTHLY STATUSES WITH LOCALSTORAGE BACKUP & HYBRID SYNC ---
-
 export const getMonthlyStatuses = async () => {
-  let localStatuses = {};
-  if (typeof window !== 'undefined') {
-    try {
-      const saved = localStorage.getItem(STATUSES_STORAGE_KEY);
-      if (saved) localStatuses = JSON.parse(saved);
-    } catch (e) {}
-  }
-
   try {
     const res = await fetch('/api/statuses', { cache: 'no-store' });
     if (res.ok) {
       const apiStatuses = await res.json();
       if (apiStatuses && typeof apiStatuses === 'object') {
-        const mergedStatuses = { ...localStatuses, ...apiStatuses };
         if (typeof window !== 'undefined') {
-          localStorage.setItem(STATUSES_STORAGE_KEY, JSON.stringify(mergedStatuses));
+          try {
+            localStorage.setItem(STATUSES_STORAGE_KEY, JSON.stringify(apiStatuses));
+          } catch (e) {}
         }
-        return mergedStatuses;
+        return apiStatuses;
       }
     }
   } catch (error) {
-    console.error('API fetch error for statuses, using localStorage:', error);
+    console.error('API fetch error for statuses, using localStorage fallback:', error);
   }
 
-  return localStatuses;
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem(STATUSES_STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+  }
+
+  return {};
 };
 
 const saveMonthlyStatusesApi = async (statuses) => {
