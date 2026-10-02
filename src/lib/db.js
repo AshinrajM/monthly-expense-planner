@@ -5,8 +5,8 @@ import os from 'os';
 const SEED_DB_PATH = path.join(process.cwd(), 'data', 'db.json');
 
 function getDbPath() {
-  // In Vercel / serverless environment, write to os.tmpdir() because root filesystem is read-only
-  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+  // Only write to os.tmpdir() when executing inside Vercel serverless environment
+  if (process.env.VERCEL) {
     return path.join(os.tmpdir(), 'db.json');
   }
   return SEED_DB_PATH;
