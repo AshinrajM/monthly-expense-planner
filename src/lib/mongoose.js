@@ -1,7 +1,5 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
 let cached = global.mongoose;
 
 if (!cached) {
@@ -9,7 +7,10 @@ if (!cached) {
 }
 
 export async function connectToDatabase() {
+  const MONGODB_URI = process.env.MONGODB_URI;
+
   if (!MONGODB_URI) {
+    console.warn("⚠️ MONGODB_URI environment variable is missing!");
     return null;
   }
 
@@ -26,6 +27,7 @@ export async function connectToDatabase() {
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((m) => {
+      console.log("✅ Successfully connected to MongoDB Atlas!");
       return m;
     });
   }
@@ -34,7 +36,7 @@ export async function connectToDatabase() {
     cached.conn = await cached.promise;
   } catch (e) {
     cached.promise = null;
-    console.error("MongoDB Atlas connection error:", e);
+    console.error("❌ MongoDB Atlas connection error:", e.message);
     return null;
   }
 

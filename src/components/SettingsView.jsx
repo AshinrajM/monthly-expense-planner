@@ -1,24 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { clearAllData, logout } from "@/lib/storage";
 
 import {
   LogOut,
   Trash2,
-  ShieldCheck,
   HelpCircle,
   Sparkles,
   ChevronRight,
   Database,
-  UserCheck
+  UserCheck,
+  CheckCircle2,
+  AlertTriangle,
+  RefreshCw
 } from "lucide-react";
 
 export default function SettingsView() {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [dbStatus, setDbStatus] = useState({ loading: true, connected: false });
+
+  const fetchDbStatus = async () => {
+    setDbStatus({ loading: true, connected: false });
+    try {
+      const res = await fetch("/api/db-status", { cache: "no-store" });
+      const data = await res.json();
+      setDbStatus({ loading: false, ...data });
+    } catch (e) {
+      setDbStatus({
+        loading: false,
+        connected: false,
+        message: "Failed to query database status.",
+        actionRequired: "Check network connection."
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchDbStatus();
+  }, []);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -60,17 +83,93 @@ export default function SettingsView() {
       <div className="mb-6">
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200/60 mb-1">
           <Sparkles size={11} className="text-indigo-500" />
-          Preferences & Data
+          Preferences & Cloud Sync
         </span>
         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
           Settings
         </h1>
         <p className="mt-0.5 text-xs font-semibold text-slate-500">
-          Manage your account session and offline storage
+          Manage your account session, MongoDB Atlas sync, and database status
         </p>
       </div>
 
       <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 items-start">
+
+        {/* Database Status Section */}
+        <section className="md:col-span-2">
+          <div className="flex items-center justify-between mb-2.5 px-2">
+            <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+              Cloud Database Connection
+            </p>
+            <button
+              onClick={fetchDbStatus}
+              className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+            >
+              <RefreshCw size={10} className={dbStatus.loading ? "animate-spin" : ""} />
+              Re-check Status
+            </button>
+          </div>
+
+          <div className={`overflow-hidden rounded-[24px] p-4.5 border transition-all ${
+            dbStatus.loading 
+              ? "bg-slate-50 border-slate-200" 
+              : dbStatus.connected 
+                ? "bg-emerald-50/50 border-emerald-200 shadow-xs" 
+                : "bg-amber-50/60 border-amber-200 shadow-xs"
+          }`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3.5">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border shadow-2xs ${
+                  dbStatus.loading
+                    ? "bg-slate-100 text-slate-400 border-slate-200"
+                    : dbStatus.connected
+                      ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                      : "bg-amber-100 text-amber-700 border-amber-200"
+                }`}>
+                  <Database size={20} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-slate-900">MongoDB Atlas Status</h3>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                      dbStatus.loading
+                        ? "bg-slate-200 text-slate-700"
+                        : dbStatus.connected
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                          : "bg-amber-100 text-amber-800 border border-amber-200"
+                    }`}>
+                      {dbStatus.loading ? (
+                        "Checking..."
+                      ) : dbStatus.connected ? (
+                        <>
+                          <CheckCircle2 size={11} className="text-emerald-600" />
+                          Connected ({dbStatus.dbName || "monthly_db"})
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle size={11} className="text-amber-600" />
+                          Disconnected / Offline
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    {dbStatus.loading
+                      ? "Testing connection to MongoDB Atlas..."
+                      : dbStatus.connected
+                        ? "Your data is permanently synced across all devices via MongoDB Atlas."
+                        : dbStatus.message || "MongoDB connection is inactive."}
+                  </p>
+                  {dbStatus.actionRequired && (
+                    <div className="mt-2 text-xs font-semibold text-amber-800 bg-amber-100/70 p-2.5 rounded-xl border border-amber-200">
+                      👉 <strong>Action Needed:</strong> {dbStatus.actionRequired}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Account Section */}
         <section>
@@ -90,7 +189,7 @@ export default function SettingsView() {
                     Active Session
                   </p>
                   <p className="text-xs font-medium text-slate-500">
-                    Local Device Storage
+                    Authenticated Account
                   </p>
                 </div>
               </div>
@@ -130,7 +229,7 @@ export default function SettingsView() {
 
           <div className="overflow-hidden rounded-[24px] glass-card border border-white/90 shadow-xs">
             <button
-              onClick={() => alert("Monthly Checklist v2.0 - All data is stored locally in your browser.")}
+              onClick={() => alert("Monthly Checklist v2.0 - Connected to MongoDB Atlas Cloud Database.")}
               className="flex w-full items-center justify-between p-4 transition-colors hover:bg-slate-50 active:bg-slate-100/80 group"
             >
               <div className="flex items-center gap-3.5">
@@ -142,7 +241,7 @@ export default function SettingsView() {
                     Help & Privacy Info
                   </p>
                   <p className="text-xs font-medium text-slate-500">
-                    Offline-first storage & guidelines
+                    Cloud sync & data guidelines
                   </p>
                 </div>
               </div>
@@ -152,7 +251,7 @@ export default function SettingsView() {
         </section>
 
         {/* Danger Zone */}
-        <section>
+        <section className="md:col-span-2">
           <p className="mb-2.5 px-2 text-[10px] font-extrabold uppercase tracking-widest text-rose-500">
             Danger Zone
           </p>
@@ -176,7 +275,7 @@ export default function SettingsView() {
                     {isClearing ? "Clearing All Data..." : "Reset & Clear All Data"}
                   </p>
                   <p className="text-xs font-medium text-rose-400">
-                    Permanently wipe payment history
+                    Permanently wipe payment history across cloud & local storage
                   </p>
                 </div>
               </div>
