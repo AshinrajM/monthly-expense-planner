@@ -53,6 +53,19 @@ export const savePaymentPlan = async (plan) => {
   }
 };
 
+export const updatePaymentPlanApi = async (updatedPlan) => {
+  try {
+    const res = await fetch(`/api/payments/${updatedPlan.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedPlan),
+    });
+    return await res.json();
+  } catch (error) {
+    console.error('Failed to update payment plan:', error);
+  }
+};
+
 export const deletePaymentPlanApi = async (paymentId) => {
   try {
     await fetch(`/api/payments/${paymentId}`, {

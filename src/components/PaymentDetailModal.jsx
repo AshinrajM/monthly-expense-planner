@@ -1,12 +1,22 @@
 import { useState, useEffect } from "react";
-import { X, Trash2, Edit2, Calendar, CheckCircle2, AlertCircle, ShieldAlert } from "lucide-react";
+import { X, Trash2, Edit2, Calendar, Check, Save, ArrowLeft } from "lucide-react";
 import { formatMonthString } from "@/lib/dateUtils";
 import { getMonthlyStatuses } from "@/lib/storage";
-import { deletePaymentPlan } from "@/lib/paymentUtils";
+import { deletePaymentPlan, updatePaymentPlan } from "@/lib/paymentUtils";
 import { getPaymentCategoryInfo } from "@/lib/iconUtils";
 
 export default function PaymentDetailModal({ payment, monthStr, onClose, onUpdate }) {
   const [completedCount, setCompletedCount] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Edit form state
+  const [name, setName] = useState(payment.name || "");
+  const [monthlyAmount, setMonthlyAmount] = useState(payment.monthlyAmount || 0);
+  const [totalAmount, setTotalAmount] = useState(payment.totalAmount || 0);
+  const [durationMonths, setDurationMonths] = useState(payment.durationMonths || 1);
+  const [dueDay, setDueDay] = useState(payment.dueDay || 1);
 
   useEffect(() => {
     let isMounted = true;
@@ -26,13 +36,35 @@ export default function PaymentDetailModal({ payment, monthStr, onClose, onUpdat
     };
   }, [payment.id]);
 
-  const category = getPaymentCategoryInfo(payment.name);
+  const category = getPaymentCategoryInfo(isEditing ? name : payment.name);
   const CategoryIcon = category.icon;
 
-  const progress = Math.min(100, Math.round((completedCount / payment.durationMonths) * 100));
-  const remainingAmount = Math.max(0, payment.totalAmount - (completedCount * payment.monthlyAmount));
+  const progress = Math.min(100, Math.round((completedCount / (isEditing ? durationMonths : payment.durationMonths)) * 100));
+  const remainingAmount = Math.max(0, (isEditing ? totalAmount : payment.totalAmount) - (completedCount * (isEditing ? monthlyAmount : payment.monthlyAmount)));
 
-  const [isDeleting, setIsDeleting] = useState(false);
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!name || monthlyAmount <= 0 || isSaving) return;
+
+    setIsSaving(true);
+    try {
+      const updatedPlan = {
+        ...payment,
+        name,
+        monthlyAmount: parseFloat(monthlyAmount),
+        totalAmount: parseFloat(totalAmount || (monthlyAmount * durationMonths)),
+        durationMonths: parseInt(durationMonths),
+        dueDay: parseInt(dueDay)
+      };
+      await updatePaymentPlan(updatedPlan);
+      onUpdate();
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Failed to update payment plan:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (isDeleting) return;
@@ -58,21 +90,35 @@ export default function PaymentDetailModal({ payment, monthStr, onClose, onUpdat
       />
       
       {/* Centered Modal / Mobile Bottom Sheet */}
-      <div className="relative bg-white w-full max-w-md mx-auto rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-6 sm:p-8 animate-in slide-in-from-bottom-6 sm:zoom-in-95 fade-in duration-300 border border-slate-100">
+      <div className="relative bg-white w-full max-w-md mx-auto rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-6 sm:p-8 animate-in slide-in-from-bottom-6 sm:zoom-in-95 fade-in duration-300 max-h-[90vh] overflow-y-auto border border-slate-100">
         
         {/* Mobile handle indicator */}
         <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-5 sm:hidden" />
 
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex items-center gap-3.5">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${category.bgClass} ${category.textClass} ${category.borderClass}`}>
-              <CategoryIcon size={24} />
-            </div>
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-3">
+            {isEditing ? (
+              <button 
+                onClick={() => setIsEditing(false)} 
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                aria-label="Back to details"
+              >
+                <ArrowLeft size={18} />
+              </button>
+            ) : (
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border ${category.bgClass} ${category.textClass} ${category.borderClass}`}>
+                <CategoryIcon size={22} />
+              </div>
+            )}
             <div>
-              <h2 className="text-xl font-extrabold text-slate-900 leading-snug">{payment.name}</h2>
-              <p className="text-slate-500 font-semibold text-sm">
-                ₹{payment.monthlyAmount.toLocaleString('en-IN')} <span className="text-xs font-normal text-slate-400">/ month</span>
-              </p>
+              <h2 className="text-xl font-extrabold text-slate-900 leading-snug">
+                {isEditing ? "Edit Payment Plan" : payment.name}
+              </h2>
+              {!isEditing && (
+                <p className="text-slate-500 font-semibold text-sm">
+                  ₹{payment.monthlyAmount.toLocaleString('en-IN')} <span className="text-xs font-normal text-slate-400">/ month</span>
+                </p>
+              )}
             </div>
           </div>
 
@@ -85,68 +131,184 @@ export default function PaymentDetailModal({ payment, monthStr, onClose, onUpdat
           </button>
         </div>
 
-        {/* Key Stats Cards */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Plan</p>
-            <p className="text-lg font-extrabold text-slate-900">₹{payment.totalAmount.toLocaleString('en-IN')}</p>
-          </div>
-          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Remaining</p>
-            <p className="text-lg font-extrabold text-slate-900">₹{remainingAmount.toLocaleString('en-IN')}</p>
-          </div>
-        </div>
+        {isEditing ? (
+          /* EDIT FORM VIEW */
+          <form onSubmit={handleSaveEdit} className="space-y-4 animate-in fade-in duration-300">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-1.5">
+                Payment Name
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-900 font-semibold text-sm"
+                required
+              />
+            </div>
 
-        {/* Progress Tracker */}
-        <div className="mb-8 bg-slate-50/50 p-4 rounded-2xl border border-slate-100/80">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Plan Timeline</span>
-            <span className="text-xs font-bold text-slate-900">
-              {completedCount} of {payment.durationMonths} payments
-            </span>
-          </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-1.5">
+                  Monthly (₹)
+                </label>
+                <input
+                  type="number"
+                  value={monthlyAmount}
+                  onChange={(e) => {
+                    const m = parseFloat(e.target.value) || 0;
+                    setMonthlyAmount(m);
+                    setTotalAmount(m * durationMonths);
+                  }}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-900 font-bold text-sm"
+                  required
+                />
+              </div>
 
-          <div className="h-2.5 w-full bg-slate-200/80 rounded-full overflow-hidden p-0.5">
-            <div 
-              className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500 rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          
-          <p className="text-[11px] font-medium text-slate-500 mt-2 flex items-center gap-1">
-            <Calendar size={12} className="text-slate-400" />
-            Due on the {payment.dueDay}th of every month
-          </p>
-        </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-1.5">
+                  Duration (Months)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={durationMonths}
+                  onChange={(e) => {
+                    const d = parseInt(e.target.value) || 1;
+                    setDurationMonths(d);
+                    setTotalAmount(monthlyAmount * d);
+                  }}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-900 font-bold text-sm"
+                  required
+                />
+              </div>
+            </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-3">
-          <button 
-            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-sm"
-            onClick={() => alert("Edit functionality is currently in read-only mode.")}
-          >
-            <Edit2 size={16} />
-            Edit
-          </button>
-          
-          <button 
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-sm border border-rose-100 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {isDeleting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
-                <span>Deleting...</span>
-              </>
-            ) : (
-              <>
-                <Trash2 size={16} />
-                <span>Delete Plan</span>
-              </>
-            )}
-          </button>
-        </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-1.5">
+                  Total Plan (₹)
+                </label>
+                <input
+                  type="number"
+                  value={totalAmount}
+                  onChange={(e) => setTotalAmount(parseFloat(e.target.value) || 0)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-900 font-bold text-sm"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-1.5">
+                  Due Day (1-31)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={dueDay}
+                  onChange={(e) => setDueDay(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200/80 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-900 font-bold text-sm text-center"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3.5 rounded-2xl transition-all text-sm"
+              >
+                Cancel
+              </button>
+              
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="flex-1 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98] text-sm disabled:opacity-70"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} />
+                    <span>Save Changes</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        ) : (
+          /* READ DETAILS VIEW */
+          <div className="animate-in fade-in duration-300">
+            {/* Key Stats Cards */}
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Plan</p>
+                <p className="text-lg font-extrabold text-slate-900">₹{payment.totalAmount.toLocaleString('en-IN')}</p>
+              </div>
+              <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Remaining</p>
+                <p className="text-lg font-extrabold text-slate-900">₹{remainingAmount.toLocaleString('en-IN')}</p>
+              </div>
+            </div>
+
+            {/* Progress Tracker */}
+            <div className="mb-8 bg-slate-50/50 p-4 rounded-2xl border border-slate-100/80">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Plan Timeline</span>
+                <span className="text-xs font-bold text-slate-900">
+                  {completedCount} of {payment.durationMonths} payments
+                </span>
+              </div>
+
+              <div className="h-2.5 w-full bg-slate-200/80 rounded-full overflow-hidden p-0.5">
+                <div 
+                  className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500 rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              
+              <p className="text-[11px] font-medium text-slate-500 mt-2 flex items-center gap-1">
+                <Calendar size={12} className="text-slate-400" />
+                Due on the {payment.dueDay}th of every month
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3">
+              <button 
+                className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-sm shadow-md"
+                onClick={() => setIsEditing(true)}
+              >
+                <Edit2 size={16} />
+                Edit Plan
+              </button>
+              
+              <button 
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-sm border border-rose-100 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    <span>Delete Plan</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { getPaymentPlans, getMonthlyStatuses, saveMonthlyStatuses, deletePaymentPlanApi } from './storage';
+import { getPaymentPlans, getMonthlyStatuses, saveMonthlyStatuses, deletePaymentPlanApi, updatePaymentPlanApi } from './storage';
 import { isMonthInRange } from './dateUtils';
 
 export const getPaymentsForMonth = async (monthStr) => {
@@ -51,6 +51,10 @@ export const calculateMonthStats = (payments = []) => {
   const progress = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
 
   return { totalAmount, paidAmount, remainingAmount, completedCount, pendingCount, progress };
+};
+
+export const updatePaymentPlan = async (updatedPlan) => {
+  await updatePaymentPlanApi(updatedPlan);
 };
 
 export const deletePaymentPlan = async (paymentId) => {

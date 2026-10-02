@@ -65,6 +65,15 @@ export async function savePaymentPlan(plan) {
   return plan;
 }
 
+export async function updatePaymentPlan(updatedPlan) {
+  const db = await getDb();
+  db.paymentPlans = (db.paymentPlans || []).map((p) =>
+    p.id === updatedPlan.id ? { ...p, ...updatedPlan } : p
+  );
+  await saveDb(db);
+  return updatedPlan;
+}
+
 export async function deletePaymentPlan(paymentId) {
   const db = await getDb();
   db.paymentPlans = (db.paymentPlans || []).filter((p) => p.id !== paymentId);

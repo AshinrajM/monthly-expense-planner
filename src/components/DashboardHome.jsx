@@ -6,6 +6,7 @@ import { getPaymentCategoryInfo } from "@/lib/iconUtils";
 import ProgressCard from "./ProgressCard";
 import PaymentCard from "./PaymentCard";
 import PaymentDetailModal from "./PaymentDetailModal";
+import AnalyticsCard from "./AnalyticsCard";
 
 export default function DashboardHome({ monthStr, refreshTrigger, onStatusChange }) {
   const [payments, setPayments] = useState([]);
@@ -57,6 +58,9 @@ export default function DashboardHome({ monthStr, refreshTrigger, onStatusChange
     <div className="animate-in fade-in duration-500 max-w-md mx-auto pt-3">
       
       <ProgressCard stats={stats} monthStr={monthStr} isHistory={isHistory} />
+
+      {/* Spending Analytics & Comparison Chart */}
+      <AnalyticsCard currentMonthStr={monthStr} />
 
       {/* Upcoming Highlight Banner */}
       {upcomingPayment && !isFuture && !isHistory && (
