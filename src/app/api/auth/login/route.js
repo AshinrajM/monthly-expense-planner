@@ -5,7 +5,10 @@ export async function POST(request) {
   try {
     const { username, password } = await request.json();
 
-    if (username === 'admin' && password === '1234') {
+    const isValidUser = (username === 'admin' && password === '1234') || 
+                        (username === 'ashinrajeevan98_db_user' && password === 'lSjgFFN2KKI9eXbK');
+
+    if (isValidUser) {
       const cookieStore = await cookies();
       cookieStore.set('auth_token', 'authenticated_user_session', {
         httpOnly: true,
