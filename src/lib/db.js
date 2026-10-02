@@ -1,7 +1,18 @@
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 
-const DB_PATH = path.join(process.cwd(), 'data', 'db.json');
+const SEED_DB_PATH = path.join(process.cwd(), 'data', 'db.json');
+
+function getDbPath() {
+  // In Vercel / serverless environment, write to os.tmpdir() because root filesystem is read-only
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    return path.join(os.tmpdir(), 'db.json');
+  }
+  return SEED_DB_PATH;
+}
+
+const DB_PATH = getDbPath();
 
 const INITIAL_DB = {
   paymentPlans: [],
@@ -14,7 +25,14 @@ async function ensureDbExists() {
   } catch {
     const dir = path.dirname(DB_PATH);
     await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(DB_PATH, JSON.stringify(INITIAL_DB, null, 2), 'utf-8');
+    
+    // Copy seed database if available
+    try {
+      const seedContent = await fs.readFile(SEED_DB_PATH, 'utf-8');
+      await fs.writeFile(DB_PATH, seedContent, 'utf-8');
+    } catch {
+      await fs.writeFile(DB_PATH, JSON.stringify(INITIAL_DB, null, 2), 'utf-8');
+    }
   }
 }
 
