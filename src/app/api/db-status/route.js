@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongoose';
+import { connectToDatabase, getLastDbError } from '@/lib/mongoose';
 
 export async function GET() {
   const uri = process.env.MONGODB_URI;
@@ -7,8 +7,8 @@ export async function GET() {
     return NextResponse.json({
       connected: false,
       hasUri: false,
-      message: 'MONGODB_URI environment variable is missing on Vercel/environment.',
-      actionRequired: 'Add MONGODB_URI to Vercel Project Settings -> Environment Variables and redeploy.'
+      message: 'MONGODB_URI environment variable is missing on Vercel.',
+      actionRequired: 'Add MONGODB_URI in Vercel Project Settings -> Environment Variables and click Redeploy.'
     }, { status: 500 });
   }
 
@@ -23,10 +23,12 @@ export async function GET() {
         message: 'Successfully connected to MongoDB Atlas.'
       });
     } else {
+      const lastErr = getLastDbError();
       return NextResponse.json({
         connected: false,
         hasUri: true,
-        message: 'Could not establish connection to MongoDB Atlas.',
+        error: lastErr,
+        message: lastErr ? `MongoDB Atlas Error: ${lastErr}` : 'Could not establish connection to MongoDB Atlas.',
         actionRequired: 'Check MongoDB Atlas Network Access (IP Access List) and ensure 0.0.0.0/0 is allowed.'
       }, { status: 500 });
     }
@@ -35,7 +37,7 @@ export async function GET() {
       connected: false,
       hasUri: true,
       error: error.message,
-      message: 'Failed to connect to MongoDB Atlas.',
+      message: `Failed to connect to MongoDB Atlas: ${error.message}`,
       actionRequired: 'Ensure 0.0.0.0/0 (Allow access from anywhere) is enabled under Network Access in MongoDB Atlas.'
     }, { status: 500 });
   }

@@ -1,0 +1,23 @@
+{
+  "paymentPlans": [
+    {
+      "id": "payment-1790949707420",
+      "name": "slice",
+      "totalAmount": 4500,
+      "durationMonths": 1,
+      "monthlyAmount": 4500,
+      "splitMonths": 1,
+      "startMonth": "2026-10",
+      "dueDay": 5,
+      "createdAt": "2026-10-02T14:01:47.420Z"
+    }
+  ],
+  "monthlyStatuses": {
+    "2026-10": {
+      "payment-1790949707420": {
+        "paid": true,
+        "paidAt": "2026-10-02T14:02:18.321Z"
+      }
+    }
+  }
+}
