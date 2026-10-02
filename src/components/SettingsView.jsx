@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearAllData, logout } from "@/lib/storage";
 
@@ -16,22 +17,40 @@ import {
 
 export default function SettingsView() {
   const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
-    router.replace("/login");
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      router.replace("/login");
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const handleClearData = async () => {
+    if (isClearing) return;
     const confirmed = window.confirm(
       "Are you sure you want to clear all data? This cannot be undone."
     );
 
     if (!confirmed) return;
 
-    await clearAllData();
-    await logout();
-    router.replace("/login");
+    setIsClearing(true);
+    try {
+      await clearAllData();
+      await logout();
+      router.replace("/login");
+    } catch (err) {
+      console.error("Clear data failed:", err);
+    } finally {
+      setIsClearing(false);
+    }
   };
 
   return (
@@ -83,14 +102,19 @@ export default function SettingsView() {
             {/* Logout Action */}
             <button
               onClick={handleLogout}
-              className="flex w-full items-center justify-between p-4 transition-colors hover:bg-slate-50 active:bg-slate-100/80 group"
+              disabled={isLoggingOut}
+              className="flex w-full items-center justify-between p-4 transition-colors hover:bg-slate-50 active:bg-slate-100/80 group disabled:opacity-60"
             >
               <div className="flex items-center gap-3.5">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100">
-                  <LogOut size={18} />
+                  {isLoggingOut ? (
+                    <div className="w-4 h-4 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
+                  ) : (
+                    <LogOut size={18} />
+                  )}
                 </div>
                 <span className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                  Sign Out
+                  {isLoggingOut ? "Signing Out..." : "Sign Out"}
                 </span>
               </div>
               <ChevronRight size={18} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
@@ -136,15 +160,20 @@ export default function SettingsView() {
           <div className="overflow-hidden rounded-[24px] bg-rose-50/30 border border-rose-100 shadow-xs">
             <button
               onClick={handleClearData}
-              className="flex w-full items-center justify-between p-4 transition-colors hover:bg-rose-100/50 active:bg-rose-100 group"
+              disabled={isClearing}
+              className="flex w-full items-center justify-between p-4 transition-colors hover:bg-rose-100/50 active:bg-rose-100 group disabled:opacity-60"
             >
               <div className="flex items-center gap-3.5">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-100 text-rose-600 border border-rose-200">
-                  <Trash2 size={18} />
+                  {isClearing ? (
+                    <div className="w-4 h-4 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
+                  ) : (
+                    <Trash2 size={18} />
+                  )}
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-bold text-rose-600">
-                    Reset & Clear All Data
+                    {isClearing ? "Clearing All Data..." : "Reset & Clear All Data"}
                   </p>
                   <p className="text-xs font-medium text-rose-400">
                     Permanently wipe payment history

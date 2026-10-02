@@ -20,18 +20,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading) return;
     setError("");
+    setIsLoading(true);
 
-    const res = await loginUser(username, password);
-
-    if (res.success) {
-      router.replace("/dashboard");
-      return;
+    try {
+      const res = await loginUser(username, password);
+      if (res.success) {
+        router.replace("/dashboard");
+        return;
+      }
+      setError(res.error || "Invalid username or password");
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setError(res.error || "Invalid username or password");
   };
 
   return (
@@ -152,9 +160,17 @@ export default function LoginPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="h-12 w-full rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-sm font-bold text-white transition-all hover:shadow-xl active:scale-[0.98] shadow-lg shadow-slate-900/15 mt-2"
+              disabled={isLoading}
+              className="h-12 w-full rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-sm font-bold text-white transition-all hover:shadow-xl active:scale-[0.98] shadow-lg shadow-slate-900/15 mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Sign In
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Signing In...</span>
+                </>
+              ) : (
+                <span>Sign In</span>
+              )}
             </button>
           </form>
         </div>

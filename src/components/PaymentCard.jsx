@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Check, AlertCircle } from "lucide-react";
 import { formatMonthString } from "@/lib/dateUtils";
 import { getPaymentCategoryInfo } from "@/lib/iconUtils";
 
 export default function PaymentCard({ payment, monthStr, onToggle, onClick, isHistory, isFuture, style }) {
   const { id, name, monthlyAmount, dueDay, paid } = payment;
+  const [isToggling, setIsToggling] = useState(false);
   
   const currentMonthStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
   const isCurrentMonth = monthStr === currentMonthStr;
@@ -11,6 +13,19 @@ export default function PaymentCard({ payment, monthStr, onToggle, onClick, isHi
 
   const category = getPaymentCategoryInfo(name);
   const CategoryIcon = category.icon;
+
+  const handleToggleClick = async (e) => {
+    e.stopPropagation();
+    if (isToggling) return;
+    setIsToggling(true);
+    try {
+      await onToggle(monthStr, id, !paid);
+    } catch (err) {
+      console.error("Failed to toggle status:", err);
+    } finally {
+      setIsToggling(false);
+    }
+  };
 
   return (
     <div 
@@ -26,10 +41,8 @@ export default function PaymentCard({ payment, monthStr, onToggle, onClick, isHi
       {/* Checkbox Button */}
       {!isFuture && (
         <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle(monthStr, id, !paid);
-          }}
+          onClick={handleToggleClick}
+          disabled={isToggling}
           className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
             paid 
               ? "bg-gradient-to-tr from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/20 scale-100" 
@@ -37,7 +50,11 @@ export default function PaymentCard({ payment, monthStr, onToggle, onClick, isHi
           }`}
           aria-label={paid ? "Mark as unpaid" : "Mark as paid"}
         >
-          <Check size={14} strokeWidth={3} className={paid ? "opacity-100" : "opacity-0"} />
+          {isToggling ? (
+            <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-indigo-700 rounded-full animate-spin" />
+          ) : (
+            <Check size={14} strokeWidth={3} className={paid ? "opacity-100" : "opacity-0"} />
+          )}
         </button>
       )}
 

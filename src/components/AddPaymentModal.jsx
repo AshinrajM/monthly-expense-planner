@@ -14,6 +14,8 @@ export default function AddPaymentModal({ onClose, onSuccess }) {
   const [monthlyAmount, setMonthlyAmount] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const monthOptions = getSurroundingMonths(getCurrentMonthString(), 0, 12);
   
   // Calculate amounts dynamically based on selected mode
@@ -36,22 +38,29 @@ export default function AddPaymentModal({ onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !amountInput || durationMonths < 1 || !startMonth || !dueDay) return;
+    if (!name || !amountInput || durationMonths < 1 || !startMonth || !dueDay || isLoading) return;
 
-    const newPlan = {
-      id: `payment-${Date.now()}`,
-      name,
-      totalAmount,
-      durationMonths: durationMonths,
-      monthlyAmount,
-      splitMonths: calculationMode === "split" ? splitMonths : undefined,
-      startMonth,
-      dueDay: parseInt(dueDay),
-      createdAt: new Date().toISOString()
-    };
+    setIsLoading(true);
+    try {
+      const newPlan = {
+        id: `payment-${Date.now()}`,
+        name,
+        totalAmount,
+        durationMonths: durationMonths,
+        monthlyAmount,
+        splitMonths: calculationMode === "split" ? splitMonths : undefined,
+        startMonth,
+        dueDay: parseInt(dueDay),
+        createdAt: new Date().toISOString()
+      };
 
-    await savePaymentPlan(newPlan);
-    onSuccess();
+      await savePaymentPlan(newPlan);
+      onSuccess();
+    } catch (err) {
+      console.error("Failed to add payment:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -257,9 +266,17 @@ export default function AddPaymentModal({ onClose, onSuccess }) {
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white py-4 rounded-2xl font-bold mt-3 hover:shadow-xl active:scale-[0.98] transition-all text-base shadow-lg shadow-slate-900/15"
+            disabled={isLoading}
+            className="w-full bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white py-4 rounded-2xl font-bold mt-3 hover:shadow-xl active:scale-[0.98] transition-all text-base shadow-lg shadow-slate-900/15 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Create Payment Plan
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Creating Payment Plan...</span>
+              </>
+            ) : (
+              <span>Create Payment Plan</span>
+            )}
           </button>
         </form>
       </div>

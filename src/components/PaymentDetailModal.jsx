@@ -32,10 +32,20 @@ export default function PaymentDetailModal({ payment, monthStr, onClose, onUpdat
   const progress = Math.min(100, Math.round((completedCount / payment.durationMonths) * 100));
   const remainingAmount = Math.max(0, payment.totalAmount - (completedCount * payment.monthlyAmount));
 
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const handleDelete = async () => {
+    if (isDeleting) return;
     if (confirm("Are you sure you want to delete this payment plan? This action cannot be undone.")) {
-      await deletePaymentPlan(payment.id);
-      onUpdate();
+      setIsDeleting(true);
+      try {
+        await deletePaymentPlan(payment.id);
+        onUpdate();
+      } catch (err) {
+        console.error("Failed to delete payment:", err);
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -121,10 +131,20 @@ export default function PaymentDetailModal({ payment, monthStr, onClose, onUpdat
           
           <button 
             onClick={handleDelete}
-            className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-sm border border-rose-100"
+            disabled={isDeleting}
+            className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] text-sm border border-rose-100 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <Trash2 size={16} />
-            Delete Plan
+            {isDeleting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-rose-300 border-t-rose-600 rounded-full animate-spin" />
+                <span>Deleting...</span>
+              </>
+            ) : (
+              <>
+                <Trash2 size={16} />
+                <span>Delete Plan</span>
+              </>
+            )}
           </button>
         </div>
       </div>
