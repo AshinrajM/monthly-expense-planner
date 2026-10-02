@@ -34,7 +34,7 @@ export const logout = async () => {
   }
 };
 
-// --- PAYMENT PLANS WITH LOCALSTORAGE BACKUP ---
+// --- PAYMENT PLANS WITH LOCALSTORAGE BACKUP & HYBRID SYNC ---
 
 export const getPaymentPlans = async () => {
   let localPlans = [];
@@ -52,19 +52,25 @@ export const getPaymentPlans = async () => {
     if (res.ok) {
       const apiPlans = await res.json();
       
-      // If server has data, merge and sync with localStorage
-      if (Array.isArray(apiPlans) && apiPlans.length > 0) {
+      if (Array.isArray(apiPlans)) {
+        // Union merge local & server plans to guarantee zero data loss
+        const planMap = new Map();
+        localPlans.forEach(p => p?.id && planMap.set(p.id, p));
+        apiPlans.forEach(p => p?.id && planMap.set(p.id, p));
+        const mergedPlans = Array.from(planMap.values());
+
         if (typeof window !== 'undefined') {
-          localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(apiPlans));
+          localStorage.setItem(PLANS_STORAGE_KEY, JSON.stringify(mergedPlans));
         }
-        return apiPlans;
-      } 
-      // If server returned empty array but local storage has plans (e.g. after serverless restart), sync local to server
-      else if (localPlans.length > 0) {
-        for (const plan of localPlans) {
-          await savePaymentPlanApi(plan);
+
+        // If local had plans not yet on server, sync them to server
+        if (localPlans.length > apiPlans.length) {
+          for (const plan of localPlans) {
+            await savePaymentPlanApi(plan);
+          }
         }
-        return localPlans;
+
+        return mergedPlans;
       }
     }
   } catch (error) {
@@ -156,7 +162,7 @@ export const deletePaymentPlanApi = async (paymentId) => {
   }
 };
 
-// --- MONTHLY STATUSES WITH LOCALSTORAGE BACKUP ---
+// --- MONTHLY STATUSES WITH LOCALSTORAGE BACKUP & HYBRID SYNC ---
 
 export const getMonthlyStatuses = async () => {
   let localStatuses = {};
@@ -171,14 +177,12 @@ export const getMonthlyStatuses = async () => {
     const res = await fetch('/api/statuses', { cache: 'no-store' });
     if (res.ok) {
       const apiStatuses = await res.json();
-      if (apiStatuses && Object.keys(apiStatuses).length > 0) {
+      if (apiStatuses && typeof apiStatuses === 'object') {
+        const mergedStatuses = { ...localStatuses, ...apiStatuses };
         if (typeof window !== 'undefined') {
-          localStorage.setItem(STATUSES_STORAGE_KEY, JSON.stringify(apiStatuses));
+          localStorage.setItem(STATUSES_STORAGE_KEY, JSON.stringify(mergedStatuses));
         }
-        return apiStatuses;
-      } else if (Object.keys(localStatuses).length > 0) {
-        await saveMonthlyStatusesApi(localStatuses);
-        return localStatuses;
+        return mergedStatuses;
       }
     }
   } catch (error) {
