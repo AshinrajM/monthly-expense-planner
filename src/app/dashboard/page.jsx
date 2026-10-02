@@ -136,6 +136,7 @@ export default function DashboardPage() {
               monthStr={selectedMonth}
               refreshTrigger={refreshTrigger}
               onStatusChange={triggerRefresh}
+              onAddPayment={handleAddPayment}
             />
           )}
 

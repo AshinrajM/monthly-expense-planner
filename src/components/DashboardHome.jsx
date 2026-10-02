@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Clock, ArrowUpRight, CalendarDays, Sparkles, CheckCircle2 } from "lucide-react";
+import { Clock, ArrowUpRight, CalendarDays, Sparkles, CheckCircle2, Plus } from "lucide-react";
 import { formatMonthString, getCurrentMonthString } from "@/lib/dateUtils";
 import { getPaymentsForMonth, calculateMonthStats, togglePaymentStatus } from "@/lib/paymentUtils";
 import { getPaymentCategoryInfo } from "@/lib/iconUtils";
@@ -8,7 +8,7 @@ import PaymentCard from "./PaymentCard";
 import PaymentDetailModal from "./PaymentDetailModal";
 import AnalyticsCard from "./AnalyticsCard";
 
-export default function DashboardHome({ monthStr, refreshTrigger, onStatusChange }) {
+export default function DashboardHome({ monthStr, refreshTrigger, onStatusChange, onAddPayment }) {
   const [payments, setPayments] = useState([]);
   const [stats, setStats] = useState(null);
   const [selectedPayment, setSelectedPayment] = useState(null);
@@ -137,16 +137,28 @@ export default function DashboardHome({ monthStr, refreshTrigger, onStatusChange
             </div>
             
             {payments.length === 0 ? (
-              <div className="glass-card rounded-[28px] text-center py-12 px-6 border border-slate-200/60 shadow-xs">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto mb-3">
-                  <Sparkles size={24} />
+              <div className="glass-card rounded-[28px] text-center py-10 px-6 border border-slate-200/70 shadow-xs flex flex-col items-center">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3.5 shadow-sm border border-indigo-100/60">
+                  <Sparkles size={26} />
                 </div>
-                <p className="text-slate-900 font-bold text-base mb-1">
-                  {isFuture ? "No Payments Scheduled Yet" : "All Clear for This Month!"}
+                <h3 className="text-slate-900 font-bold text-base mb-1">
+                  {isFuture ? "No Payments Scheduled Yet" : "No Expenses Added Yet"}
+                </h3>
+                <p className="text-slate-500 text-xs leading-relaxed max-w-xs mb-5">
+                  {isFuture 
+                    ? "Tap below to add a recurring bill or expense payment plan." 
+                    : "Your expense checklist is empty. Add rent, loans, credit cards, or utility bills to start tracking!"}
                 </p>
-                <p className="text-slate-500 text-xs leading-relaxed max-w-xs mx-auto">
-                  {isFuture ? "Tap the '+' button to add your recurring payment plan." : "Enjoy your peace of mind. No pending checklist items."}
-                </p>
+
+                {onAddPayment && (
+                  <button
+                    onClick={onAddPayment}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md hover:shadow-lg active:scale-95 transition-all"
+                  >
+                    <Plus size={16} strokeWidth={2.5} />
+                    <span>Add Expense</span>
+                  </button>
+                )}
               </div>
             ) : (
               <div className="space-y-2">
