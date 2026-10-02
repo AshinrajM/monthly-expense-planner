@@ -52,7 +52,7 @@ export default function MonthExplorer({ selectedMonth, setSelectedMonth, refresh
   };
 
   return (
-    <div className="animate-in fade-in duration-500 max-w-md mx-auto pt-2">
+    <div className="animate-in fade-in duration-500 w-full max-w-md md:max-w-4xl mx-auto pt-2">
       {/* Month Selector Header Pill */}
       <div className="mb-5 text-center">
         <p className="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase mb-1.5 flex items-center justify-center gap-1">
@@ -81,7 +81,7 @@ export default function MonthExplorer({ selectedMonth, setSelectedMonth, refresh
             <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full">Tap month to switch</span>
           </div>
 
-          <div className="space-y-3 relative z-10">
+          <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 relative z-10">
             {months.map(monthStr => {
               const isSelected = monthStr === selectedMonth;
               const isCurrent = monthStr === currentRealMonth;

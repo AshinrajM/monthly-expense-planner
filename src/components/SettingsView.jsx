@@ -54,7 +54,7 @@ export default function SettingsView() {
   };
 
   return (
-    <div className="mx-auto max-w-md animate-in fade-in duration-500 pt-3 px-1">
+    <div className="mx-auto w-full max-w-md md:max-w-4xl animate-in fade-in duration-500 pt-3 px-1">
 
       {/* Header */}
       <div className="mb-6">
@@ -70,7 +70,7 @@ export default function SettingsView() {
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 items-start">
 
         {/* Account Section */}
         <section>
